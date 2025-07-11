@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-Image Security Scan Report</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- DataTables CSS -->
+    <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+    
+    <style>
+        body {
+            background-color: #f8f9fa;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+
+        .header {
+            background: #000000;
+            color: white;
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        .image-selector {
+            margin-bottom: 1rem;
+        }
+
+        .metric-card {
+            background: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 1rem;
+        }
+
+        .metric-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 0.25rem;
+        }
+
+        .metric-label {
+            color: #6c757d;
+            font-size: 0.875rem;
+            text-transform: uppercase;
+        }
+
+        .severity-CRITICAL { color: #dc3545; }
+        .severity-HIGH { color: #fd7e14; }
+        .severity-MEDIUM { color: #ffc107; }
+        .severity-LOW { color: #28a745; }
+        .severity-UNKNOWN { color: #6c757d; }
+
+        .badge-CRITICAL { background-color: #dc3545; color: white; }
+        .badge-HIGH { background-color: #fd7e14; color: white; }
+        .badge-MEDIUM { background-color: #ffc107; color: #212529; }
+        .badge-LOW { background-color: #28a745; color: white; }
+        .badge-UNKNOWN { background-color: #6c757d; color: white; }
+
+        .filter-section {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .table-container {
+            background: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .image-info {
+            background: #e9ecef;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <div class="container">
+            <h1 class="mb-0">Security Vulnerability Report</h1>
+            <p class="mb-0 mt-2">Multi-Image Security Scan Results</p>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Image Selector -->
+        <div class="image-selector">
+            <div class="row">
+                <div class="col-md-6">
+                    <label class="form-label">Select Docker Image:</label>
+                    <select id="imageSelector" class="form-select form-select-lg">
+                        <!-- Options will be populated by JavaScript -->
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <div class="image-info" id="imageInfo">
+                        <!-- Image info will be displayed here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Metrics Dashboard -->
+        <div class="row mb-4" id="metricsContainer">
+            <!-- Metrics will be populated by JavaScript -->
+        </div>
+
+        <!-- Filter Section -->
+        <div class="filter-section">
+            <h5 class="mb-3">Filters</h5>
+            <div class="row">
+                <div class="col-md-3 mb-3">
+                    <label class="form-label">Severity</label>
+                    <select id="severityFilter" class="form-select">
+                        <option value="">All Severities</option>
+                        <option value="CRITICAL">Critical</option>
+                        <option value="HIGH">High</option>
+                        <option value="MEDIUM">Medium</option>
+                        <option value="LOW">Low</option>
+                        <option value="UNKNOWN">Unknown</option>
+                    </select>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <label class="form-label">Package</label>
+                    <input type="text" id="packageFilter" class="form-control" placeholder="Filter by package name">
+                </div>
+                <div class="col-md-3 mb-3">
+                    <label class="form-label">CVE ID</label>
+                    <input type="text" id="cveFilter" class="form-control" placeholder="Filter by CVE ID">
+                </div>
+                <div class="col-md-3 mb-3">
+                    <label class="form-label">Fix Available</label>
+                    <select id="fixFilter" class="form-select">
+                        <option value="">All</option>
+                        <option value="yes">Fix Available</option>
+                        <option value="no">No Fix</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Vulnerabilities Table -->
+        <div class="table-container">
+            <table id="vulnerabilityTable" class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Package</th>
+                        <th>Version</th>
+                        <th>Vulnerability</th>
+                        <th>Severity</th>
+                        <th>Description</th>
+                        <th>Fixed Version</th>
+                    </tr>
+                </thead>
+                <tbody id="vulnerabilityTableBody">
+                    <!-- Table body will be populated by JavaScript -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+
+    <script>
+        // Sample data structure - Replace this with your actual scan data
+        const scanData = {
+            "node:14-alpine": {
+                "target": "node:14-alpine (alpine 3.17.3)",
+                "scanDate": "2025-07-10 18:51:49",
+                "metrics": {
+                    "CRITICAL": 0,
+                    "HIGH": 10,
+                    "MEDIUM": 40,
+                    "LOW": 6,
+                    "UNKNOWN": 2,
+                    "TOTAL": 58
+                },
+                "vulnerabilities": [
+                    {
+                        "package": "busybox",
+                        "version": "1.35.0-r29",
+                        "cve": "CVE-2023-42363",
+                        "severity": "MEDIUM",
+                        "description": "busybox: use-after-free in awk",
+                        "fixedVersion": "1.35.0-r31",
+                        "hasFix": "yes"
+                    },
+                    // Add more vulnerabilities here
+                ]
+            },
+            // Add more images here
+            "python:3.9-slim": {
+                "target": "python:3.9-slim (debian 11)",
+                "scanDate": "2025-07-10 19:00:00",
+                "metrics": {
+                    "CRITICAL": 2,
+                    "HIGH": 15,
+                    "MEDIUM": 25,
+                    "LOW": 10,
+                    "UNKNOWN": 0,
+                    "TOTAL": 52
+                },
+                "vulnerabilities": [
+                    // Add vulnerabilities for this image
+                ]
+            }
+        };
+
+        let currentTable = null;
+        let currentImage = null;
+
+        $(document).ready(function() {
+            // Populate image selector
+            populateImageSelector();
+            
+            // Initialize with first image
+            if (Object.keys(scanData).length > 0) {
+                loadImageData(Object.keys(scanData)[0]);
+            }
+
+            // Handle image selection change
+            $('#imageSelector').on('change', function() {
+                loadImageData($(this).val());
+            });
+
+            // Apply filters
+            $('#severityFilter, #packageFilter, #cveFilter, #fixFilter').on('change keyup', function() {
+                if (currentTable) {
+                    filterTable();
+                }
+            });
+        });
+
+        function populateImageSelector() {
+            const selector = $('#imageSelector');
+            selector.empty();
+            
+            Object.keys(scanData).forEach(image => {
+                selector.append(`<option value="${image}">${image}</option>`);
+            });
+        }
+
+        function loadImageData(imageName) {
+            currentImage = imageName;
+            const data = scanData[imageName];
+            
+            if (!data) return;
+
+            // Update image info
+            $('#imageInfo').html(`
+                <strong>Target:</strong> ${data.target}
+            `);
+
+            // Update metrics
+            updateMetrics(data.metrics);
+
+            // Update table
+            updateVulnerabilityTable(data.vulnerabilities);
+        }
+
+        function updateMetrics(metrics) {
+            const container = $('#metricsContainer');
+            container.empty();
+
+            const severities = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'UNKNOWN', 'TOTAL'];
+            
+            severities.forEach(severity => {
+                const count = metrics[severity] || 0;
+                const colorClass = severity === 'TOTAL' ? 'text-primary' : `severity-${severity}`;
+                
+                container.append(`
+                    <div class="col-md-2 col-sm-4 col-6">
+                        <div class="metric-card">
+                            <div class="metric-value ${colorClass}">${count}</div>
+                            <div class="metric-label">${severity.toLowerCase()}</div>
+                        </div>
+                    </div>
+                `);
+            });
+        }
+
+        function updateVulnerabilityTable(vulnerabilities) {
+            // Destroy existing DataTable if it exists
+            if (currentTable) {
+                currentTable.destroy();
+            }
+
+            // Clear and populate table body
+            const tbody = $('#vulnerabilityTableBody');
+            tbody.empty();
+
+            vulnerabilities.forEach(vuln => {
+                const fixedVersionHtml = vuln.hasFix === 'yes' 
+                    ? `<span class="text-success">${vuln.fixedVersion}</span>`
+                    : '<span class="text-muted">-</span>';
+
+                tbody.append(`
+                    <tr data-severity="${vuln.severity}" 
+                        data-package="${vuln.package}"
+                        data-cve="${vuln.cve}"
+                        data-fix="${vuln.hasFix}">
+                        <td><strong>${vuln.package}</strong></td>
+                        <td>${vuln.version}</td>
+                        <td>
+                            <a href="https://nvd.nist.gov/vuln/detail/${vuln.cve}" 
+                               target="_blank">${vuln.cve}</a>
+                        </td>
+                        <td>
+                            <span class="badge badge-${vuln.severity}">
+                                ${vuln.severity}
+                            </span>
+                        </td>
+                        <td>
+                            <small>${vuln.description}</small>
+                        </td>
+                        <td>${fixedVersionHtml}</td>
+                    </tr>
+                `);
+            });
+
+            // Initialize DataTable
+            currentTable = $('#vulnerabilityTable').DataTable({
+                pageLength: 25,
+                order: [[3, 'desc']], // Sort by severity
+                columnDefs: [
+                    {
+                        targets: 3,
+                        type: 'severity-sort'
+                    }
+                ]
+            });
+
+            // Custom severity sorting
+            $.fn.dataTable.ext.type.order['severity-sort-pre'] = function(data) {
+                var order = { 'CRITICAL': 5, 'HIGH': 4, 'MEDIUM': 3, 'LOW': 2, 'UNKNOWN': 1 };
+                return order[$(data).text().trim()] || 0;
+            };
+        }
+
+        function filterTable() {
+            $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
+                var row = currentTable.row(dataIndex).node();
+                var severity = $(row).data('severity');
+                var packageName = $(row).data('package').toLowerCase();
+                var cve = $(row).data('cve').toLowerCase();
+                var hasFix = $(row).data('fix');
+
+                var severityFilter = $('#severityFilter').val();
+                var packageFilter = $('#packageFilter').val().toLowerCase();
+                var cveFilter = $('#cveFilter').val().toLowerCase();
+                var fixFilter = $('#fixFilter').val();
+
+                if (severityFilter && severity !== severityFilter) return false;
+                if (packageFilter && !packageName.includes(packageFilter)) return false;
+                if (cveFilter && !cve.includes(cveFilter)) return false;
+                if (fixFilter && hasFix !== fixFilter) return false;
+
+                return true;
+            });
+
+            currentTable.draw();
+            $.fn.dataTable.ext.search.pop();
+        }
+    </script>
+
+    <!-- 
+    To use this template with your pipeline:
+    
+    1. Replace the 'scanData' object in the JavaScript with your actual scan results
+    2. The data structure should follow this format:
+       {
+         "image-name": {
+           "target": "full target description",
+           "scanDate": "scan timestamp",
+           "metrics": {
+             "CRITICAL": count,
+             "HIGH": count,
+             "MEDIUM": count,
+             "LOW": count,
+             "UNKNOWN": count,
+             "TOTAL": count
+           },
+           "vulnerabilities": [
+             {
+               "package": "package-name",
+               "version": "current-version",
+               "cve": "CVE-ID",
+               "severity": "SEVERITY",
+               "description": "vulnerability description",
+               "fixedVersion": "fixed-version",
+               "hasFix": "yes|no"
+             }
+           ]
+         }
+       }
+    
+    3. You can generate this data structure from Trivy JSON output in your pipeline
+    4. The template will automatically populate the dropdown and display the data
+    -->
+</body>
+</html>

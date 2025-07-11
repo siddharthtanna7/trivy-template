@@ -1,15 +1,3 @@
-# Trivy Multi-Image Security Report Generator
-
-A unified HTML report generator for Trivy security scans that combines multiple Docker image scan results into a single interactive dashboard with image selection dropdown.
-
-## Features
-
-- 📊 **Unified Dashboard**: Single HTML report for multiple Docker images
-- 🔄 **Interactive Dropdown**: Easy switching between different image scan results
-- 🎨 **Clean UI**: Modern, responsive design with severity-based color coding
-- 🔍 **Advanced Filtering**: Filter by severity, package, CVE ID, or fix availability
-- 📈 **Metrics Overview**: Quick view of vulnerability counts by severity
-- 🔗 **Direct CVE Links**: Click-through to NVD for detailed vulnerability information
 
 ## Files
 
